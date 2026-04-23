@@ -1,0 +1,212 @@
+{
+  "name": "AI Lead Classifier + CRM Sync Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "68a347a5-a4c8-4fec-b2a1-9e906f0e4ab9",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -240,
+        0
+      ],
+      "id": "9fdb85ae-2024-4dfa-b8ab-88eb544cd24d",
+      "name": "Webhook",
+      "webhookId": "68a347a5-a4c8-4fec-b2a1-9e906f0e4ab9"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a lead classifier. Analyze this lead and return ONLY valid JSON.\n\nLead info:\nName: {{ $json.name }}\nEmail: {{ $json.email }}\nCompany: {{ $json.company }}\nMessage: {{ $json.message }}\n\nReturn this exact JSON structure:\n{\n  \"score\": \"hot|warm|cold\",\n  \"industry\": \"detected industry\",\n  \"intent\": \"one sentence summary\",\n  \"follow_up\": \"suggested next action\"\n}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -16,
+        0
+      ],
+      "id": "b7ffc13b-2723-48d3-800a-676b99798af9",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        64,
+        224
+      ],
+      "id": "d450f632-0a84-4e1e-b0e8-16e0697121b8",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "vP2IIahEMKfknyzF",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "=34a33e73-be88-80fc-9d01-d8a43ee28f95",
+          "mode": "id"
+        },
+        "title": "={{ $json.name }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Name|title",
+              "title": "={{ $json.name }}"
+            },
+            {
+              "key": "Email|rich_text",
+              "textContent": "={{ $json.email }}"
+            },
+            {
+              "key": "Company|rich_text",
+              "textContent": "={{ $json.company }}"
+            },
+            {
+              "key": "Score|rich_text",
+              "textContent": "={{ $json.score }}"
+            },
+            {
+              "key": "Industry|rich_text",
+              "textContent": "={{ $json.industry }}"
+            },
+            {
+              "key": "Intent|rich_text",
+              "textContent": "={{ $json.intent }}"
+            },
+            {
+              "key": "Follow-up|rich_text",
+              "textContent": "={{ $json.follow_up }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        0
+      ],
+      "id": "093c1e40-8f13-4660-8de2-c1a302357802",
+      "name": "Create a database page",
+      "credentials": {
+        "notionApi": {
+          "id": "k6aFwFb7Wvoynpth",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.text;\nconst cleaned = raw.replace(/```json\\n?/g, '').replace(/```/g, '').trim();\nconst parsed = JSON.parse(cleaned);\n\n// Get webhook data\nconst webhookItem = $('Webhook').first();\nconst rawWebhook = webhookItem.json;\nconst webhookBody = rawWebhook?.body || rawWebhook || {};\n\nreturn [{\n  json: {\n    name: webhookBody?.name || rawWebhook?.name || parsed?.name || 'John Smith',\n    email: webhookBody?.email || rawWebhook?.email || 'john@example.com',\n    company: webhookBody?.company || rawWebhook?.company || 'Acme Corp',\n    \n    // Put raw message in intent column\n    intent: webhookBody?.message || rawWebhook?.message || parsed?.intent || 'No message provided',\n    \n    // LLM fields (keep for other columns if needed)\n    score: parsed?.score || 'cold',\n    industry: parsed?.industry || 'N/A',\n    follow_up: parsed?.follow_up || 'Lead is incomplete',\n    \n    // Debug\n    _webhookKeys: JSON.stringify(Object.keys(rawWebhook || {}))\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        0
+      ],
+      "id": "a0ac8da4-a7c9-41e1-8435-c415b6e4a58d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\":\"received\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        784,
+        0
+      ],
+      "id": "3c2edc38-448e-4fbe-bf38-363b5d084954",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Create a database page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a database page": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "99f301b9-db3f-4aac-9f06-741494611bd2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6b0531dbb17459db0b3b7e501655c4918e9121f9e9c5b034d45e9d058c2244f0"
+  },
+  "id": "D7TB1VPYJ9vDExWB",
+  "tags": []
+}
