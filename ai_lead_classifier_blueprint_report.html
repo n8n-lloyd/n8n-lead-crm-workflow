@@ -1,0 +1,269 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.wrap{position:relative;width:100%;min-height:560px;overflow:hidden;font-family:var(--font-mono);background:#04091e}
+#bgvid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0.45}
+.grid-bg{position:absolute;inset:0;z-index:1;background-image:linear-gradient(rgba(100,180,255,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(100,180,255,0.07) 1px,transparent 1px);background-size:32px 32px}
+.grid-bg::after{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(100,180,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(100,180,255,0.03) 1px,transparent 1px);background-size:8px 8px}
+.tint{position:absolute;inset:0;z-index:1;background:linear-gradient(150deg,rgba(3,8,28,0.75) 0%,rgba(2,6,20,0.82) 60%,rgba(3,8,28,0.75) 100%)}
+.scanline{position:absolute;inset:0;z-index:2;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,15,45,0.1) 2px,rgba(0,15,45,0.1) 4px);pointer-events:none}
+.corner{position:absolute;z-index:4;width:20px;height:20px;border-color:rgba(100,180,255,0.45);border-style:solid}
+.corner.tl{top:12px;left:12px;border-width:1.5px 0 0 1.5px}
+.corner.tr{top:12px;right:12px;border-width:1.5px 1.5px 0 0}
+.corner.bl{bottom:12px;left:12px;border-width:0 0 1.5px 1.5px}
+.corner.br{bottom:12px;right:12px;border-width:0 1.5px 1.5px 0}
+.stamp{position:absolute;top:14px;right:40px;z-index:4;font-size:9px;letter-spacing:.12em;color:rgba(100,180,255,0.32);text-transform:uppercase}
+.rev{position:absolute;bottom:14px;left:40px;z-index:4;font-size:9px;letter-spacing:.1em;color:rgba(100,180,255,0.28)}
+
+/* scanning line animation */
+.scan-sweep{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+.scan-sweep::after{content:'';position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(100,180,255,0.18),transparent);animation:sweep 5s linear infinite;top:-2px}
+@keyframes sweep{0%{top:-2px}100%{top:100%}}
+
+.stage{position:relative;z-index:3;min-height:560px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 2.5rem 0.5rem;cursor:pointer}
+.slide{display:none;width:100%;max-width:640px;animation:fu .45s ease both}
+.slide.active{display:block}
+@keyframes fu{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+/* section header */
+.sec-num{font-size:9px;letter-spacing:.18em;color:rgba(100,180,255,0.4);text-transform:uppercase;margin-bottom:4px}
+.bp-tag{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(100,180,255,0.75);margin-bottom:12px}
+.bp-tag::before{content:'';display:inline-block;width:6px;height:6px;border:1px solid rgba(100,180,255,0.6);transform:rotate(45deg);flex-shrink:0}
+.bp-title{font-size:22px;font-weight:400;color:#d0e8ff;line-height:1.22;margin-bottom:6px;letter-spacing:.01em}
+.bp-title .sub-code{color:rgba(100,180,255,0.45);font-size:10px;display:block;letter-spacing:.12em;margin-bottom:5px;text-transform:uppercase}
+.liner{height:1px;background:linear-gradient(90deg,rgba(100,180,255,0.55),rgba(100,180,255,0.12),transparent);margin:10px 0 14px}
+.body-text{font-size:12px;color:rgba(160,210,255,0.68);line-height:1.78;margin-bottom:14px}
+
+/* pipeline */
+.pipe{display:flex;align-items:stretch;width:100%;margin:14px 0;gap:0}
+.pn{flex:1;min-width:0;border:1px solid rgba(100,180,255,0.18);background:rgba(8,30,65,0.55);padding:9px 3px;text-align:center;opacity:0;transition:opacity .4s,background .4s,border-color .4s,box-shadow .4s;position:relative}
+.pn::before{content:attr(data-n);position:absolute;top:2px;left:4px;font-size:7px;color:rgba(100,180,255,0.32);letter-spacing:.05em}
+.pn.lit{opacity:1;background:rgba(8,45,100,0.75);border-color:rgba(100,180,255,0.65);box-shadow:inset 0 0 14px rgba(60,140,255,0.14),0 0 8px rgba(60,140,255,0.1)}
+.pn .ic{font-size:14px;margin-bottom:3px}
+.pn .lb{font-size:8.5px;color:rgba(160,210,255,0.8);line-height:1.3;letter-spacing:.07em;text-transform:uppercase}
+.ar{color:rgba(100,180,255,0.35);font-size:11px;flex-shrink:0;padding:0;opacity:0;transition:opacity .3s;align-self:center;display:flex;align-items:center}
+.ar.lit{opacity:1;color:rgba(100,180,255,0.75)}
+
+/* step cards */
+.steps{display:flex;flex-direction:column;gap:7px;margin-top:8px}
+.step{border:1px solid rgba(100,180,255,0.15);background:rgba(6,22,52,0.6);padding:10px 12px;opacity:0;transform:translateX(-12px);transition:all .4s;position:relative;display:flex;align-items:flex-start;gap:10px}
+.step.show{opacity:1;transform:translateX(0)}
+.step::after{content:'';position:absolute;right:0;top:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,rgba(100,180,255,0.25),transparent)}
+.step-num{font-size:9px;color:rgba(100,180,255,0.5);letter-spacing:.08em;flex-shrink:0;padding-top:1px;min-width:28px}
+.step-title{font-size:11px;color:#c8e4ff;font-weight:500;margin-bottom:2px;letter-spacing:.04em}
+.step-body{font-size:10.5px;color:rgba(150,200,255,0.6);line-height:1.55}
+
+/* cards grid */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.bpcard{border:1px solid rgba(100,180,255,0.16);background:rgba(6,22,52,0.6);padding:11px 10px;opacity:0;transform:translateY(8px);transition:all .4s;position:relative}
+.bpcard::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,rgba(100,180,255,0.3),transparent)}
+.bpcard.show{opacity:1;transform:translateY(0)}
+.bpcard .cl{font-size:8.5px;color:rgba(100,180,255,0.45);margin-bottom:5px;letter-spacing:.1em;text-transform:uppercase}
+.bpcard .cv{font-size:12.5px;color:#d0e8ff}
+
+/* benefits list */
+.blist{margin-top:8px}
+.bi{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid rgba(100,180,255,0.07);opacity:0;transform:translateX(-10px);transition:all .4s}
+.bi:last-child{border-bottom:none}
+.bi.show{opacity:1;transform:translateX(0)}
+.bd{flex-shrink:0;margin-top:5px;width:8px;height:8px;position:relative}
+.bd::before,.bd::after{content:'';position:absolute;background:rgba(100,180,255,0.65)}
+.bd::before{width:8px;height:1px;top:3.5px;left:0}
+.bd::after{width:1px;height:8px;top:0;left:3.5px}
+.bi p{font-size:11.5px;color:rgba(155,205,255,0.72);line-height:1.6}
+.bi strong{color:#c8e4ff;font-weight:500}
+
+/* json box */
+.jbox{border:1px solid rgba(100,180,255,0.22);background:rgba(3,12,32,0.88);padding:12px 14px;font-size:11px;color:rgba(155,205,255,0.7);line-height:1.9;margin-top:12px;overflow:hidden;max-height:0;opacity:0;transition:max-height .7s,opacity .5s;position:relative}
+.jbox::before{content:'// structured output';position:absolute;top:5px;right:10px;font-size:7.5px;color:rgba(100,180,255,0.22);letter-spacing:.08em}
+.jbox.open{max-height:200px;opacity:1}
+.jk{color:rgba(120,190,255,0.9)}.js{color:rgba(175,230,195,0.85)}.jh{color:#7ee8a2;font-weight:500}
+
+/* conclusion */
+.conclusion{border:1px solid rgba(100,180,255,0.18);background:rgba(6,22,52,0.6);padding:16px;margin-top:10px;opacity:0;transition:opacity .6s .2s}
+.conclusion.show{opacity:1}
+.conclusion p{font-size:12px;color:rgba(155,205,255,0.7);line-height:1.75}
+.conclusion strong{color:#d0e8ff}
+
+.cta{text-align:center;margin-top:16px}
+.btn{background:transparent;border:1px solid rgba(100,180,255,0.28);color:rgba(140,200,255,0.78);font-size:10px;padding:6px 14px;cursor:pointer;letter-spacing:.1em;text-transform:uppercase;transition:background .2s,border-color .2s;font-family:var(--font-mono)}
+.btn:hover{background:rgba(25,70,150,0.28);border-color:rgba(100,180,255,0.58)}
+
+.nav{position:relative;z-index:4;display:flex;align-items:center;justify-content:center;gap:10px;padding:0 0 .9rem}
+.dn{width:6px;height:6px;background:rgba(100,180,255,0.12);border:1px solid rgba(100,180,255,0.22);transform:rotate(45deg);cursor:pointer;transition:background .3s,border-color .3s}
+.dn.on{background:rgba(100,180,255,0.58);border-color:rgba(100,180,255,0.88)}
+.ctr{font-size:9px;color:rgba(100,180,255,0.32);min-width:42px;text-align:center;letter-spacing:.1em}
+.play-hint{position:absolute;bottom:48px;left:50%;transform:translateX(-50%);z-index:10;background:rgba(8,30,65,0.7);border:1px solid rgba(100,180,255,0.28);color:rgba(140,200,255,0.7);font-size:9px;padding:4px 14px;cursor:pointer;display:none;letter-spacing:.1em;text-transform:uppercase;font-family:var(--font-mono)}
+.play-hint.show{display:block}
+</style>
+
+<div class="wrap">
+  <video id="bgvid" autoplay muted loop playsinline preload="auto"></video>
+  <div class="grid-bg"></div>
+  <div class="tint"></div>
+  <div class="scanline"></div>
+  <div class="scan-sweep"></div>
+  <div class="corner tl"></div><div class="corner tr"></div>
+  <div class="corner bl"></div><div class="corner br"></div>
+  <div class="stamp">ANTIGRAVITY — AUTOMATION SYSTEMS</div>
+  <div class="rev">REV.01 — LLOYD LISENBY — AI LEAD CLASSIFIER</div>
+  <button class="play-hint" id="hint" onclick="forcePlay()">[ tap to play background ]</button>
+
+  <div class="stage" onclick="forcePlay()">
+
+    <!-- SLIDE 0: Title + Pipeline -->
+    <div class="slide active" id="s0">
+      <div class="sec-num">// DOC-001 — TECHNICAL REPORT</div>
+      <div class="bp-title"><span class="sub-code">// project: ai-lead-classifier-v1</span>AI Lead Classifier<br>+ CRM Sync Workflow</div>
+      <div class="liner"></div>
+      <div class="body-text">Automated lead qualification pipeline. Ingests, classifies, structures, and syncs leads into Notion CRM in real time. Built on n8n + Google Gemini.</div>
+      <div class="pipe">
+        <div class="pn" id="ps0" data-n="01"><div class="ic">⬡</div><div class="lb">Webhook</div></div>
+        <div class="ar" id="pa0">──▶</div>
+        <div class="pn" id="ps1" data-n="02"><div class="ic">⬡</div><div class="lb">AI Classify</div></div>
+        <div class="ar" id="pa1">──▶</div>
+        <div class="pn" id="ps2" data-n="03"><div class="ic">⬡</div><div class="lb">JS Format</div></div>
+        <div class="ar" id="pa2">──▶</div>
+        <div class="pn" id="ps3" data-n="04"><div class="ic">⬡</div><div class="lb">Notion CRM</div></div>
+        <div class="ar" id="pa3">──▶</div>
+        <div class="pn" id="ps4" data-n="05"><div class="ic">⬡</div><div class="lb">Response</div></div>
+      </div>
+    </div>
+
+    <!-- SLIDE 1: Problem + Objective -->
+    <div class="slide" id="s1">
+      <div class="bp-tag">01 — problem statement</div>
+      <div class="bp-title">Pipeline inefficiency detected</div>
+      <div class="liner"></div>
+      <div class="body-text">Modern sales pipelines face delays from manual lead qualification, unstructured data, and fragmented tooling. Inconsistent scoring leads to missed opportunities.</div>
+      <div class="grid3">
+        <div class="bpcard" id="c0"><div class="cl">fault.001</div><div class="cv">Manual review</div></div>
+        <div class="bpcard" id="c1"><div class="cl">fault.002</div><div class="cv">Scoring variance</div></div>
+        <div class="bpcard" id="c2"><div class="cl">fault.003</div><div class="cv">Missed opportunities</div></div>
+      </div>
+      <div style="margin-top:12px;font-size:10.5px;color:rgba(100,180,255,0.5);letter-spacing:.06em">// objective: build automated ingestion → classification → CRM sync pipeline</div>
+    </div>
+
+    <!-- SLIDE 2: Workflow Architecture -->
+    <div class="slide" id="s2">
+      <div class="bp-tag">02 — workflow architecture</div>
+      <div class="bp-title">5-step execution sequence</div>
+      <div class="liner"></div>
+      <div class="steps">
+        <div class="step" id="st0"><div class="step-num">STEP 01</div><div><div class="step-title">Lead Ingestion</div><div class="step-body">Webhook receives leads from forms, websites, or CRM systems in real time.</div></div></div>
+        <div class="step" id="st1"><div class="step-num">STEP 02</div><div><div class="step-title">AI Classification</div><div class="step-body">Gemini model classifies leads as Hot / Warm / Cold. Extracts intent, tags, and actions.</div></div></div>
+        <div class="step" id="st2"><div class="step-num">STEP 03</div><div><div class="step-title">Data Structuring</div><div class="step-body">JavaScript node formats AI output into validated JSON schema for consistency.</div></div></div>
+        <div class="step" id="st3"><div class="step-num">STEP 04</div><div><div class="step-title">CRM Sync</div><div class="step-body">Structured data pushed to Notion CRM, creating centralized lead records.</div></div></div>
+        <div class="step" id="st4"><div class="step-num">STEP 05</div><div><div class="step-title">Response Handling</div><div class="step-body">Webhook response returned for real-time downstream integration.</div></div></div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: AI Output Spec -->
+    <div class="slide" id="s3">
+      <div class="bp-tag">03 — ai classification output</div>
+      <div class="bp-title">Structured JSON schema spec</div>
+      <div class="liner"></div>
+      <div class="body-text">System prompt enforces strict output format. Schema validated before CRM handoff. Zero hallucination tolerance in structured fields.</div>
+      <div class="jbox" id="jbox">
+<span class="jk">"lead_score"</span> : <span class="jh">"Hot"</span>,
+<span class="jk">"intent"</span>     : <span class="js">"Purchase ready"</span>,
+<span class="jk">"tags"</span>       : <span class="js">["high-value", "urgent"]</span>,
+<span class="jk">"action"</span>     : <span class="js">"Call within 1 hour"</span>,
+<span class="jk">"confidence"</span> : <span class="js">0.94</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: Benefits + Conclusion -->
+    <div class="slide" id="s4">
+      <div class="bp-tag">04 — benefits + conclusion</div>
+      <div class="bp-title">System performance outcomes</div>
+      <div class="liner"></div>
+      <div class="blist">
+        <div class="bi" id="b0"><div class="bd"></div><p><strong>Manual work eliminated</strong> — no copy-paste, no manual scoring</p></div>
+        <div class="bi" id="b1"><div class="bd"></div><p><strong>Response time improved</strong> — hot leads routed in under 3 seconds</p></div>
+        <div class="bi" id="b2"><div class="bd"></div><p><strong>Lead conversion increased</strong> — consistent scoring, zero lead drops</p></div>
+        <div class="bi" id="b3"><div class="bd"></div><p><strong>Fully scalable architecture</strong> — 1 lead or 10,000, same pipeline cost</p></div>
+      </div>
+      <div class="conclusion" id="concl">
+        <p>// conclusion — This solution transforms manual lead handling into a <strong>real-time AI-powered pipeline</strong>, improving efficiency and revenue potential. Production-ready. Zero manual steps.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="nav">
+    <button class="btn" style="padding:4px 10px" onclick="go(-1)">◀ prev</button>
+    <div class="dn on" onclick="goTo(0)"></div>
+    <div class="dn" onclick="goTo(1)"></div>
+    <div class="dn" onclick="goTo(2)"></div>
+    <div class="dn" onclick="goTo(3)"></div>
+    <div class="dn" onclick="goTo(4)"></div>
+    <span class="ctr" id="ctr">01 / 05</span>
+    <button class="btn" style="padding:4px 10px" onclick="go(1)">next ▶</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12/dist/hls.min.js"></script>
+<script>
+const HLS_URL='https://stream.mux.com/QgTir2Bu4u6d01CqyKEBCks68PIm2nCM7vhwXgenS00tw.m3u8';
+const v=document.getElementById('bgvid');
+const hint=document.getElementById('hint');
+
+function initHLS(){
+  if(window.Hls&&Hls.isSupported()){
+    const h=new Hls({autoStartLoad:true});
+    h.loadSource(HLS_URL);h.attachMedia(v);
+    h.on(Hls.Events.MANIFEST_PARSED,()=>v.play().then(()=>hint.classList.remove('show')).catch(()=>hint.classList.add('show')));
+  } else if(v.canPlayType('application/vnd.apple.mpegurl')){
+    v.src=HLS_URL;v.play().then(()=>hint.classList.remove('show')).catch(()=>hint.classList.add('show'));
+  } else { hint.classList.add('show'); }
+}
+function forcePlay(){v.play().then(()=>hint.classList.remove('show')).catch(()=>{});}
+if(window.Hls){initHLS();}
+else{const s=document.querySelector('script[src*="hls"]');if(s)s.addEventListener('load',initHLS);else setTimeout(initHLS,600);}
+
+let cur=0;const total=5;
+const slides=document.querySelectorAll('.slide');
+const dots=document.querySelectorAll('.dn');
+function goTo(n){
+  if(window.event)window.event.stopPropagation();
+  slides[cur].classList.remove('active');dots[cur].classList.remove('on');
+  cur=(n+total)%total;
+  slides[cur].classList.add('active');dots[cur].classList.add('on');
+  document.getElementById('ctr').textContent=String(cur+1).padStart(2,'0')+' / 05';
+  runSlide(cur);
+}
+function go(d){goTo(cur+d);}
+function runSlide(n){
+  if(n===0)animPipe();
+  if(n===1)animCards(['c0','c1','c2']);
+  if(n===2)animSteps();
+  if(n===3){const j=document.getElementById('jbox');j.classList.remove('open');setTimeout(()=>j.classList.add('open'),260);}
+  if(n===4){animBenefits();setTimeout(()=>document.getElementById('concl').classList.add('show'),700);}
+}
+function animPipe(){
+  ['ps0','ps1','ps2','ps3','ps4'].forEach(id=>document.getElementById(id).classList.remove('lit'));
+  ['pa0','pa1','pa2','pa3'].forEach(id=>document.getElementById(id).classList.remove('lit'));
+  ['ps0','ps1','ps2','ps3','ps4'].forEach((id,i)=>{
+    setTimeout(()=>{
+      document.getElementById(id).classList.add('lit');
+      const el=document.getElementById('pa'+i);
+      if(el)setTimeout(()=>el.classList.add('lit'),150);
+    },i*340);
+  });
+}
+function animCards(ids){
+  ids.forEach(id=>document.getElementById(id).classList.remove('show'));
+  ids.forEach((id,i)=>setTimeout(()=>document.getElementById(id).classList.add('show'),i*180));
+}
+function animSteps(){
+  ['st0','st1','st2','st3','st4'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  ['st0','st1','st2','st3','st4'].forEach((id,i)=>setTimeout(()=>document.getElementById(id).classList.add('show'),i*150));
+}
+function animBenefits(){
+  ['b0','b1','b2','b3'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  document.getElementById('concl').classList.remove('show');
+  ['b0','b1','b2','b3'].forEach((id,i)=>setTimeout(()=>document.getElementById(id).classList.add('show'),i*160));
+}
+setTimeout(()=>animPipe(),500);
+</script>
